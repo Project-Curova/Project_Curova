@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Hospital Dashboard{% endblock %}
+{% block content %}
+  <h2>Welcome, {{ user.username }}!</h2>
+  <p>This is your hospital dashboard.</p>
+
+  <h3>Register New Staff</h3>
+  <a href="{% url 'staff_register' %}">Register Staff</a>
+{% endblock %}

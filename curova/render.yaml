@@ -1,0 +1,10 @@
+# render.yaml
+services:
+  - type: web
+    name: cold-box-api
+    runtime: python
+    buildCommand: ""
+    startCommand: gunicorn your_project.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: curova.settings
