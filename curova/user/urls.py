@@ -1,7 +1,9 @@
 from django.urls import path
+from rest_framework.urls import app_name
+
 from . import views
 
-urlpatterns = [
+"""urlpatterns = [
     # Template Views
     path('register/patient/', views.patient_register_view, name='patient_register'),
     path('register/hospital/', views.hospital_register_view, name='hospital_register'),
@@ -21,4 +23,19 @@ urlpatterns = [
     path('api/dashboard/patient/', views.PatientDashboardAPIView.as_view(), name='api_patient_dashboard'),
     path('api/dashboard/hospital/', views.HospitalDashboardAPIView.as_view(), name='api_hospital_dashboard'),
     path('api/dashboard/staff/', views.StaffDashboardAPIView.as_view(), name='api_staff_dashboard'),
+]
+"""
+
+from rest_framework_simplejwt.views import (
+TokenRefreshView
+)
+
+
+
+urlpatterns = [
+    path('register/', views.RegisterView.as_view(),name='register'),
+    path('login/', views.LoginAPIView.as_view(),name='login'),
+    path('logout/', views.LogoutAPIView.as_view(),name='logout'),
+    path('api/token/refresh/', TokenRefreshView.as_view(),name='token_refresh'),
+
 ]

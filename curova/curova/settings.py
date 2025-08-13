@@ -10,8 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
+from datetime import datetime
+
+import datetime
+
 import dj_database_url
 from pathlib import Path
+
+from django.conf.global_settings import AUTH_USER_MODEL
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,8 +34,14 @@ SECRET_KEY = 'django-insecure-cv%$(khjmj+mv=uljpgz%x01&19s79#!4v(2yk4dvlf91$_k3m
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-default-for-dev-only")
 DEBUG = 'RENDER' not in os.environ   # Render sets RENDER in its env; use this to auto-disable DEBUG on Render.
-ALLOWED_HOSTS = [os.environ.get("RENDER_EXTERNAL_HOSTNAME", "localhost")]
+ALLOWED_HOSTS = [os.environ.get("RENDER_EXTERNAL_HOSTNAME", "localhost"),
+                 "project-curova.netlify.app"
+                  ]
+# SECURITY WARNING: don't run with debug turned on in production!
+#DEBUG = True
 
+# ALLOWED_HOSTS = ['www.coldbox.store', '44.217.92.188', 'localhost']
+#ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 """ALLOWED_HOSTS = []"""
 
 # Application definition
@@ -43,13 +55,20 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'user',
     'rest_framework',
-    'rest_framework_simplejwt'
+    'rest_framework_simplejwt',
+    'drf_yasg',
+    'rest_framework_simplejwt.token_blacklist'
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=1),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1)
 }
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -93,7 +112,12 @@ DATABASES = {
         ssl_require=True
     )
 }
-
+"""DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / "db.sqlite3",
+    }
+}"""
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -143,3 +167,5 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+AUTH_USER_MODEL = "user.User"

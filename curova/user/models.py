@@ -1,9 +1,39 @@
 # user/models.py
 
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
+from rest_framework_simplejwt.tokens import RefreshToken
 
-# Patient Profile
+
+class User(AbstractUser):
+
+    TYPE_CHOICES = [
+        ('H', 'Hospital'),
+        ('P','Patient'),
+        ('S', 'Staff')
+    ]
+    username = models.CharField(max_length=100, unique= True, null=True, blank=True)
+    email = models.EmailField(max_length=100, unique=True, db_index=True)
+    full_name = models.CharField(max_length=200, null=True, blank=True)
+    dob = models.DateField(null=True, blank=True)
+    is_authorized = models.BooleanField(default=False)
+    country = models.CharField(max_length=50)
+    state = models.CharField(max_length=50)
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES, blank=False, null=False)
+
+    def __str__(self) -> str:
+        return self.username
+
+    def tokens(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            'refresh':str(refresh),
+            'access': str(refresh.access_token)
+        }
+
+
+
+"""# Patient Profile
 class Patient(models.Model):
     GENDER_CHOICES = [('M', 'Male'), ('F', 'Female'), ('O', 'Other')]
 
@@ -44,3 +74,4 @@ class Staff(models.Model):
 
     def __str__(self):
         return self.user.username
+"""

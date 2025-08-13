@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission
+"""from rest_framework.permissions import BasePermission
 
 class IsPatient(BasePermission):
     def has_permission(self, request, view):
@@ -10,4 +10,4 @@ class IsHospital(BasePermission):
 
 class IsStaff(BasePermission):
     def has_permission(self, request, view):
-        return hasattr(request.user, 'staff')
+        return hasattr(request.user, 'staff')"""

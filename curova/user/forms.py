@@ -1,4 +1,4 @@
-# forms.py
+""""# forms.py
 from django import forms
 from django.contrib.auth.models import User
 
@@ -54,3 +54,4 @@ class PatientRegistrationForm(forms.ModelForm):
         if commit:
             patient.save()
         return patient
+"""
