@@ -67,7 +67,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'full_name','email','dob','state','country','type', 'password','is_superuser','is_staff')
 
-        def validate(self, attrs):
+    def validate(self, attrs):
             email = attrs.get('email','')
             username = attrs.get('username', '')
             if not username.isalnum():
@@ -75,7 +75,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                     self.default_error_messages)
             return attrs
 
-        def create(self, validated_data):
+    def create(self, validated_data):
 
             user = User.objects.create_user(
                 username= validated_data('username'),
