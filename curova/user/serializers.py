@@ -68,31 +68,29 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'full_name','email','dob','state','country','type', 'password','is_superuser','is_staff')
 
     def validate(self, attrs):
-            email = attrs.get('email','')
-            username = attrs.get('username', '')
-            if not username.isalnum():
-                raise serializers.ValidationError(
-                    self.default_error_messages)
+        email = attrs.get('email','')
+        username = attrs.get('username', '')
+        if not username.isalnum():
+            raise serializers.ValidationError(
+                self.default_error_messages)
             return attrs
 
     def create(self, validated_data):
-
-            user = User.objects.create_user(
-                username= validated_data('username'),
-                full_name= validated_data('full_name'),
-                email= validated_data('email'),
-                dob= validated_data('dob'),
-                state= validated_data('state'),
-                country= validated_data('country'),
-                type= validated_data('type'),
-                password= validated_data('password'),
-                is_superuser= validated_data('is_superuser'),
-                is_staff= validated_data('is_staff'),
-            )
-
-            user.set_password(validated_data['password'])
-            user.save()
-            return user
+        user = User.objects.create_user(
+            username= validated_data('username'),
+            full_name= validated_data('full_name'),
+            email= validated_data('email'),
+            dob= validated_data('dob'),
+            state= validated_data('state'),
+            country= validated_data('country'),
+            type= validated_data('type'),
+            password= validated_data('password'),
+            is_superuser= validated_data('is_superuser'),
+            is_staff= validated_data('is_staff'),
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
 
 
 class LoginSerializer(serializers.ModelSerializer):
