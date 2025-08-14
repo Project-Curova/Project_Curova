@@ -57,7 +57,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_yasg',
-    'rest_framework_simplejwt.token_blacklist'
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
@@ -71,6 +72,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1)
 }
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware'
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -79,7 +81,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
+"""CORS_ALLOWED_ORIGINS = [
+    "https://myfrontend.com",
+    "http://localhost:3000",
+]"""
+
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 
 ROOT_URLCONF = 'curova.urls'
 
