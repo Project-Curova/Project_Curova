@@ -73,7 +73,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         if not username.isalnum():
             raise serializers.ValidationError(
                 self.default_error_messages)
-                return attrs
+        return attrs
 
     def create(self, validated_data):
         user = User.objects.create_user(
