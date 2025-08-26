@@ -53,7 +53,7 @@ from django.utils.crypto import get_random_string
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
-from .models import User
+from .models import User, Patient
 from django.contrib import auth
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
@@ -159,3 +159,22 @@ class PasswordResetSerializer(serializers.Serializer):
         user.login_token = otp
         user.save()
         return {'user':user , 'otp': otp}
+    
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "full_name", "dob", "type", "country", "state"]
+        read_only_fields = ["id", "type", "email", "username"]
+
+
+class PatientSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Patient
+        fields = [
+           "id", "user", "date_of_birth", "gender", "address",
+            "state", "country", "patient_id", "blood_group",
+            "genotype", "insurance_provider_name"
+        ]
+        read_only_fields = ["id", "patient_id"]

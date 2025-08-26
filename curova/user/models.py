@@ -33,7 +33,7 @@ class User(AbstractUser):
 
 
 
-"""# Patient Profile
+# Patient Profile
 class Patient(models.Model):
     GENDER_CHOICES = [('M', 'Male'), ('F', 'Female'), ('O', 'Other')]
 
@@ -50,7 +50,7 @@ class Patient(models.Model):
 
     def __str__(self):
         return self.user.username
-
+"""
 # Hospital Profile
 class Hospital(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
