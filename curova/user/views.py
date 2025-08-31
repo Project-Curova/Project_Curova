@@ -115,7 +115,7 @@ class TokenLoginView(APIView):
 class PatientAPIView(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    permission_classes=(permissions.AllowAny,)
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         """Attach the logged-in user to the patient profile"""
@@ -125,7 +125,7 @@ class PatientAPIView(viewsets.ModelViewSet):
 class HospitalAPIView(viewsets.ModelViewSet):
     queryset = Hospital.objects.all()
     serializer_class = HospitalSerializer
-    permission_classes=(permissions.AllowAny,)
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         """Attach the logged-in user to the patient profile"""
