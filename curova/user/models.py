@@ -50,7 +50,7 @@ class Patient(models.Model):
 
     def __str__(self):
         return self.user.username
-"""
+
 # Hospital Profile
 class Hospital(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -74,4 +74,3 @@ class Staff(models.Model):
 
     def __str__(self):
         return self.user.username
-"""

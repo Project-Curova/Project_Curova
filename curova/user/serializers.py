@@ -1,59 +1,8 @@
-"""from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import Patient, Hospital, Staff
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'password']
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
-
-class PatientSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-
-    class Meta:
-        model = Patient
-        fields = '__all__'
-
-    def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        user = User.objects.create_user(**user_data)
-        return Patient.objects.create(user=user, **validated_data)
-
-class HospitalSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-
-    class Meta:
-        model = Hospital
-        fields = '__all__'
-
-    def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        user = User.objects.create_user(**user_data)
-        return Hospital.objects.create(user=user, **validated_data)
-
-class StaffSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-
-    class Meta:
-        model = Staff
-        fields = '__all__'
-
-    def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        user = User.objects.create_user(**user_data)
-        return Staff.objects.create(user=user, **validated_data)"""
-from logging import raiseExceptions
-from multiprocessing.managers import Value
-
 from django.utils.crypto import get_random_string
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
-from .models import User, Patient
+from .models import User, Patient, Hospital, Staff
 from django.contrib import auth
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
@@ -148,7 +97,7 @@ class PasswordResetSerializer(serializers.Serializer):
         user = User.objects.filter(email=value).first()
         if user is None:
             raise serializers.ValidationError("No user found with this email.")
-        return Value
+        return value
 
 
     def save(self):
@@ -178,3 +127,53 @@ class PatientSerializer(serializers.ModelSerializer):
             "genotype", "insurance_provider_name"
         ]
         read_only_fields = ["id", "patient_id"]
+
+class HospitalSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Hospital
+        fields = [
+           "id", "user", "hospital_name", "registration_no", "location" ]
+        read_only_fields = ["id"]
+
+class StaffSerializer(serializers.ModelSerializer):
+    # Nested user info for staff login account
+    user = RegisterSerializer(write_only=True)
+    affiliated_hospital = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Staff
+        fields = [
+            "id", "user", "staff_id", "gender", "designation",
+            "date_of_employment", "affiliated_hospital"
+        ]
+        read_only_fields = ["id", "affiliated_hospital"]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        hospital_user = request.user
+
+        # ✅ only hospital can create staff
+        if hospital_user.type != "H":
+            raise serializers.ValidationError("Only hospitals can create staff.")
+
+        hospital_profile = Hospital.objects.filter(user=hospital_user).first()
+        if not hospital_profile:
+            raise serializers.ValidationError("Hospital profile not found for this user.")
+
+        # ✅ extract user data from request
+        user_data = validated_data.pop("user")
+        staff_user = User.objects.create_user(
+            username=user_data["username"],
+            email=user_data["email"],
+            password=user_data["password"],
+            type="S",
+        )
+
+        # ✅ create staff profile linked to hospital
+        return Staff.objects.create(
+            user=staff_user,
+            affiliated_hospital=hospital_profile,
+            **validated_data
+        )

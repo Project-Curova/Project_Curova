@@ -9,11 +9,12 @@ from . import views
 from rest_framework_simplejwt.views import (
 TokenRefreshView
 )
-from .views import PatientAPIView
+from .views import PatientAPIView, HospitalAPIView, StaffAPIView
 
 router = DefaultRouter()
-router.register(r'patients', PatientAPIView, basename='patients')
-
+router.register(r'patient', PatientAPIView, basename='patient')
+router.register(r'hospital', HospitalAPIView, basename='hospital')
+router.register(r'staff', StaffAPIView, basename='staff')
 
 urlpatterns = [
     path('register/', views.RegisterView.as_view(),name='register'),

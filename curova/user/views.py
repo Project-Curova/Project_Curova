@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Patient
+from .models import Patient, Hospital
 from .serializers import *
 
 class RegisterView(generics.GenericAPIView):
@@ -120,3 +120,37 @@ class PatientAPIView(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Attach the logged-in user to the patient profile"""
         serializer.save(user=self.request.user)
+
+
+class HospitalAPIView(viewsets.ModelViewSet):
+    queryset = Hospital.objects.all()
+    serializer_class = HospitalSerializer
+    permission_classes=(permissions.AllowAny,)
+
+    def perform_create(self, serializer):
+        """Attach the logged-in user to the patient profile"""
+        if self.request.user.is_authorized:
+            serializer.save(user=self.request.user)
+        else:
+            raise serializers.ValidationError("User has not be authenticated by admin")
+
+
+class StaffAPIView(viewsets.ModelViewSet):
+    queryset = Staff.objects.all()
+    serializer_class = StaffSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Hospitals only see their staff"""
+        user = self.request.user
+        if user.type == "H":
+            hospital = Hospital.objects.filter(user=user).first()
+            return Staff.objects.filter(affiliated_hospital=hospital)
+        elif user.type == "S":
+            return Staff.objects.filter(user=user)
+        return Staff.objects.none()
+
+    def perform_create(self, serializer):
+        if self.request.user.type != "H":
+            raise serializers.ValidationError("Only hospitals can create staff.")
+        serializer.save()
