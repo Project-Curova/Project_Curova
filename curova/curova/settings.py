@@ -32,12 +32,12 @@ SECRET_KEY = 'django-insecure-cv%$(khjmj+mv=uljpgz%x01&19s79#!4v(2yk4dvlf91$_k3m
 #DEBUG = True
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-default-for-dev-only")
-"""DEBUG = 'RENDER' not in os.environ   # Render sets RENDER in its env; use this to auto-disable DEBUG on Render.
-ALLOWED_HOSTS = [os.environ.get("RENDER_EXTERNAL_HOSTNAME", "localhost"),
+DEBUG = 'RENDER' not in os.environ   # Render sets RENDER in its env; use this to auto-disable DEBUG on Render.
+"""ALLOWED_HOSTS = [os.environ.get("RENDER_EXTERNAL_HOSTNAME", "localhost"),
                  "project-curova.netlify.app"
              ]"""
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+#DEBUG = True
 
 # ALLOWED_HOSTS = ['www.coldbox.store', '44.217.92.188', 'localhost']
 #ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
