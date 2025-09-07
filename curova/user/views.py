@@ -2,6 +2,8 @@ from django.core.mail import send_mail
 from django.shortcuts import render
 from django.utils.autoreload import raise_last_exception
 from django.views.generic import DetailView
+from google.auth.transport import requests
+from google.oauth2 import id_token
 
 from rest_framework import generics, status, mixins, permissions, viewsets
 from rest_framework.decorators import permission_classes,api_view
@@ -11,6 +13,8 @@ from rest_framework.views import APIView
 
 from .models import Patient, Hospital
 from .serializers import *
+from ..curova import settings
+
 
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
@@ -154,3 +158,43 @@ class StaffAPIView(viewsets.ModelViewSet):
         if self.request.user.type != "H":
             raise serializers.ValidationError("Only hospitals can create staff.")
         serializer.save()
+
+class GoogleLoginAPIView(APIView):
+    def post(self, request):
+        token = request.data.get("token")  # Google ID token from frontend
+        if not token:
+            return Response({"error": "No token provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Verify token with Google
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+
+            email = idinfo["email"]
+            first_name = idinfo.get("given_name", "")
+            last_name = idinfo.get("family_name", "")
+
+            # Get or create user
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "type": "P",  # default to patient or let frontend decide role
+                },
+            )
+
+            # Issue JWT
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "type": user.type,
+                }
+            })
+
+        except ValueError:
+            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
