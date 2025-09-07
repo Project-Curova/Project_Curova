@@ -12,7 +12,6 @@ from .models import Patient, Hospital
 from .serializers import *
 from ..curova import settings
 
-
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
     def post(self,request):
