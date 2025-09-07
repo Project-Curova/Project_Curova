@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.utils.autoreload import raise_last_exception
 from django.views.generic import DetailView
 from google.oauth2 import id_token
-
+from google.auth.transport import requests
 from rest_framework import generics, status, mixins, permissions, viewsets
 from rest_framework.decorators import permission_classes,api_view
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -181,7 +181,7 @@ class GoogleLoginView(APIView):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         try:
-            idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), client_id)
 
             email = idinfo.get("email")
             email_verified = idinfo.get("email_verified", False)
