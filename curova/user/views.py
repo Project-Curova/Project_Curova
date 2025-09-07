@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import render
 from django.utils.autoreload import raise_last_exception
@@ -159,42 +160,70 @@ class StaffAPIView(viewsets.ModelViewSet):
             raise serializers.ValidationError("Only hospitals can create staff.")
         serializer.save()
 
-class GoogleLoginAPIView(APIView):
+User = get_user_model()
+
+
+class GoogleLoginView(APIView):
+    """
+    POST /userapi/google-login/
+    Body: { "id_token": "<google_id_token>" }
+    """
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request):
-        token = request.data.get("token")  # Google ID token from frontend
+        token = request.data.get("id_token")
         if not token:
-            return Response({"error": "No token provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Missing Google ID token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        client_id = settings.GOOGLE_CLIENT_ID
+        if not client_id:
+            return Response({"detail": "Server misconfiguration: GOOGLE_CLIENT_ID not set"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         try:
-            # Verify token with Google
-            idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+            idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
 
-            email = idinfo["email"]
-            first_name = idinfo.get("given_name", "")
-            last_name = idinfo.get("family_name", "")
+            email = idinfo.get("email")
+            email_verified = idinfo.get("email_verified", False)
+            name = idinfo.get("name", "")
+
+            if not email or not email_verified:
+                return Response({"detail": "Email not available or not verified by Google"},
+                                status=status.HTTP_400_BAD_REQUEST)
 
             # Get or create user
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
                     "username": email,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "type": "P",  # default to patient or let frontend decide role
-                },
+                    "full_name": name,
+                    "type": "P",   # Default new users are Patients
+                }
             )
 
-            # Issue JWT
+            if not user.is_authorized:
+                return Response(
+                    {"detail": "Admin needs to approve your account"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # JWT Tokens
             refresh = RefreshToken.for_user(user)
+
+            # Use your serializer to return consistent user data
+            user_data = UserSerializer(user).data
+
             return Response({
+                "detail": "Logged in successfully with Google",
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "type": user.type,
-                }
-            })
+                "user": user_data,
+                "new_user": created
+            }, status=status.HTTP_200_OK)
 
         except ValueError:
-            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Invalid Google token"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": f"Google login failed: {str(e)}"},
+                            status=status.HTTP_400_BAD_REQUEST)
