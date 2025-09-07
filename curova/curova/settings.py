@@ -158,7 +158,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-GOOGLE_CLIENT_ID = os.getenv("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")
+GOOGLE_CLIENT_ID = os.getenv("38869544863-ens9v1ihodv82vcg2ekuppul9j4s4rr6.apps.googleusercontent.com")
 
 AUTHENTICATION_BACKENDS =(
     'django.contrib.auth.backends.ModelBackend',
