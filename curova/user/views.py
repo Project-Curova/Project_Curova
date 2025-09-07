@@ -1,8 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
-from django.shortcuts import render
-from django.utils.autoreload import raise_last_exception
-from django.views.generic import DetailView
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework import generics, status, mixins, permissions, viewsets
