@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from .models import Patient, Hospital
 from .serializers import *
-from ..curova import settings
+from django.conf import settings
 
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
