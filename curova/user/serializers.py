@@ -177,3 +177,8 @@ class StaffSerializer(serializers.ModelSerializer):
             affiliated_hospital=hospital_profile,
             **validated_data
         )
+
+# user/serializers.py
+
+class GoogleAuthSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
