@@ -4,6 +4,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework import generics, status, mixins, permissions, viewsets
 from rest_framework.decorators import permission_classes,api_view
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
