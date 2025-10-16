@@ -158,7 +158,7 @@ class StaffAPIView(viewsets.ModelViewSet):
 User = get_user_model()
 
 
-class GoogleLoginAPIView(APIView):
+class GoogleLoginAPIView(GenericAPIView):
     def post(self, request):
         serializer = GoogleAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
