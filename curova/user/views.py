@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from drf_yasg.utils import swagger_auto_schema
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework import generics, status, mixins, permissions, viewsets
@@ -159,7 +160,11 @@ class StaffAPIView(viewsets.ModelViewSet):
 User = get_user_model()
 
 
-class GoogleLoginAPIView(GenericAPIView):
+class GoogleLoginAPIView(APIView):
+    @swagger_auto_schema(
+        request_body=GoogleAuthSerializer,
+        responses={200: "JWT tokens returned"}
+    )
     def post(self, request):
         serializer = GoogleAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
