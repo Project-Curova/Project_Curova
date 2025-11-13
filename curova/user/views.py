@@ -9,7 +9,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Patient, Hospital
+from .models import Patient, Hospital,User
+from .serializers import UserSerializer
 from .serializers import *
 from django.conf import settings
 

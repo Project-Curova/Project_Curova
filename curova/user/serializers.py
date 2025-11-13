@@ -1,7 +1,7 @@
 from django.utils.crypto import get_random_string
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
-
+from django.contrib.auth import get_user_model
 from .models import User, Patient, Hospital, Staff
 from django.contrib import auth
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
