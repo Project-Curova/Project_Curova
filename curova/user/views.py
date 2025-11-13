@@ -6,26 +6,33 @@ from google.auth.transport import requests
 from rest_framework import generics, status, mixins, permissions, viewsets
 from rest_framework.decorators import permission_classes,api_view
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .models import Patient, Hospital
 from .serializers import *
 from django.conf import settings
 
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
-    def post(self,request):
-        user= request.data
-        serializer = self.serializer_class(data=user)
-        serializer.is_valid(raise_exception=True)
 
-        is_superuser = serializer.validated_data.get('is_superuser', False)
-        is_staff = serializer.validated_data.get('is_staff', False)
-        serializer.save()
-        user_data = serializer.data
-        return Response(user_data, status= status.HTTP_201_CREATED)
+    def post(self, request, *args, **kwargs):
+        # Pass request into serializer context so it can check if caller is admin
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Build safe response payload
+        response_data = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "full_name": user.full_name,
+            "type": user.type,
+            "is_authorized": user.is_authorized,
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 class LoginAPIView(generics.GenericAPIView):
     serializer_class = LoginSerializer
@@ -215,3 +222,28 @@ class GoogleLoginAPIView(APIView):
 
         except ValueError:
             return Response({"error": "Invalid Google token"}, status=400)
+
+
+class ApproveUserAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        user_id = request.data.get("user_id")
+        approve = request.data.get("approve", True)
+        from .models import User
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "User not found"}, status=404)
+        user.is_authorized = bool(approve)
+        user.save()
+        return Response({"detail": "User authorization updated", "user_id": user.id, "is_authorized": user.is_authorized})
+
+
+class PendingUsersListAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        # Fetch all users who are not authorized yet
+        pending_users = User.objects.filter(is_authorized=False)
+        serializer = UserSerializer(pending_users, many=True)
+        return Response(serializer.data)

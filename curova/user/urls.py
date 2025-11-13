@@ -9,7 +9,8 @@ from . import views
 from rest_framework_simplejwt.views import (
 TokenRefreshView
 )
-from .views import PatientAPIView, HospitalAPIView, StaffAPIView,GoogleLoginAPIView
+from .views import PatientAPIView, HospitalAPIView, StaffAPIView, GoogleLoginAPIView, ApproveUserAPIView, \
+    PendingUsersListAPIView
 
 router = DefaultRouter()
 router.register(r'patient', PatientAPIView, basename='patient')
@@ -22,7 +23,8 @@ urlpatterns = [
     path('logout/', views.LogoutAPIView.as_view(),name='logout'),
     path('api/token/refresh/', TokenRefreshView.as_view(),name='token_refresh'),
     path("auth/google/", GoogleLoginAPIView.as_view(), name="google-login"),
-
+    path('approve/', ApproveUserAPIView.as_view(), name='approve-user'),
+    path('pending/', PendingUsersListAPIView.as_view(), name='pending-users'),
 ]
 
 urlpatterns += router.urls

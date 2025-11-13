@@ -7,40 +7,63 @@ from django.contrib import auth
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 
+User = get_user_model()
+
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(max_length=100)
-    is_superuser = serializers.BooleanField(default=False)
-    is_staff = serializers.BooleanField(default=False)
+    # Remove is_superuser and is_staff from public input
+    password = serializers.CharField(max_length=100, write_only=True)
 
     class Meta:
         model = User
-        fields = ('username', 'full_name','email','dob','state','country','type', 'password','is_superuser','is_staff')
+        fields = ('username', 'full_name', 'email', 'dob', 'state', 'country', 'type', 'password')
 
     def validate(self, attrs):
-        email = attrs.get('email','')
         username = attrs.get('username', '')
-        if not username.isalnum():
-            raise serializers.ValidationError(
-                self.default_error_messages)
+        if not username or not username.isalnum():
+            raise serializers.ValidationError("Username must be alphanumeric and not empty.")
+        # Ensure type is one of the allowed choices
+        if attrs.get('type') not in ['H', 'P', 'S']:
+            raise serializers.ValidationError("Invalid user type. Must be one of: H, P, S.")
         return attrs
 
     def create(self, validated_data):
+        request = self.context.get('request', None)
+
+        # Base flags (never set by public users)
+        is_staff_flag = False
+        is_superuser_flag = False
+
+        # If an authenticated admin is creating users via this endpoint, allow flags
+        if request and request.user.is_authenticated and request.user.is_staff:
+            # Optional elevated flags via admin-only request data
+            is_staff_flag = bool(self.initial_data.get('is_staff', False))
+            is_superuser_flag = bool(self.initial_data.get('is_superuser', False))
+
+        # Authorization logic based on type
+        user_type = validated_data['type']
+        if user_type == 'P':
+            is_authorized = True  # patients auto-authorized
+        elif user_type == 'H':
+            is_authorized = False  # hospitals require admin approval
+        else:  # 'S' staff (usually created by hospitals or admins)
+            is_authorized = False
+
         user = User.objects.create_user(
-            username= validated_data['username'],
-            full_name= validated_data['full_name'],
-            email= validated_data['email'],
-            dob= validated_data['dob'],
-            state= validated_data['state'],
-            country= validated_data['country'],
-            type= validated_data['type'],
-            password= validated_data['password'],
-            is_superuser= validated_data['is_superuser'],
-            is_staff= validated_data['is_staff'],
+            username=validated_data['username'],
+            full_name=validated_data.get('full_name'),
+            email=validated_data['email'],
+            dob=validated_data.get('dob'),
+            state=validated_data.get('state'),
+            country=validated_data.get('country'),
+            type=user_type,
+            password=validated_data['password'],
+            is_staff=is_staff_flag,
+            is_superuser=is_superuser_flag,
         )
-        user.set_password(validated_data['password'])
+        # Enforce authorization rule after creation
+        user.is_authorized = is_authorized
         user.save()
         return user
-
 
 class LoginSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
@@ -138,7 +161,6 @@ class HospitalSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 class StaffSerializer(serializers.ModelSerializer):
-    # Nested user info for staff login account
     user = RegisterSerializer(write_only=True)
     affiliated_hospital = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -154,7 +176,6 @@ class StaffSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         hospital_user = request.user
 
-        # ✅ only hospital can create staff
         if hospital_user.type != "H":
             raise serializers.ValidationError("Only hospitals can create staff.")
 
@@ -162,7 +183,10 @@ class StaffSerializer(serializers.ModelSerializer):
         if not hospital_profile:
             raise serializers.ValidationError("Hospital profile not found for this user.")
 
-        # ✅ extract user data from request
+        if not hospital_user.is_authorized:
+            raise serializers.ValidationError("Hospital must be authorized before creating staff.")
+
+        # Extract user data for staff account
         user_data = validated_data.pop("user")
         staff_user = User.objects.create_user(
             username=user_data["username"],
@@ -171,13 +195,15 @@ class StaffSerializer(serializers.ModelSerializer):
             type="S",
         )
 
-        # ✅ create staff profile linked to hospital
+        # ✅ Auto‑authorize staff since hospital is authorized
+        staff_user.is_authorized = True
+        staff_user.save()
+
         return Staff.objects.create(
             user=staff_user,
             affiliated_hospital=hospital_profile,
             **validated_data
         )
-
 # user/serializers.py
 
 class GoogleAuthSerializer(serializers.Serializer):
