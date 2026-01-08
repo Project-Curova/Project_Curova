@@ -46,6 +46,13 @@ class Patient(models.Model):
     patient_id = models.CharField(max_length=20, unique=True)
     blood_group = models.CharField(max_length=3)
     genotype = models.CharField(max_length=5)
+    primary_hospital = models.ForeignKey(
+        'Hospital',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='primary_patients'
+    )
     insurance_provider_name = models.CharField(max_length=100)
 
     def __str__(self):

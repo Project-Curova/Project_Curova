@@ -5,6 +5,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework import generics, status, mixins, permissions, viewsets
 from rest_framework.decorators import permission_classes,api_view
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -248,3 +249,35 @@ class PendingUsersListAPIView(APIView):
         pending_users = User.objects.filter(is_authorized=False)
         serializer = UserSerializer(pending_users, many=True)
         return Response(serializer.data)
+
+class HospitalListAPIView(generics.ListAPIView):
+    queryset = User.objects.filter(type='H', is_authorized=True)
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class PatientListAPIView(generics.ListAPIView):
+    queryset = User.objects.filter(type='P')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class StaffListAPIView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        hospital_id = self.request.query_params.get('hospital_id')
+        qs = User.objects.filter(type='S')
+        if hospital_id:
+            qs = qs.filter(staff__hospital_id=hospital_id)
+        return qs
+
+class PrimaryHospitalAPIView(generics.RetrieveUpdateAPIView):
+    serializer_class = PrimaryHospitalSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        # Ensure only the logged-in patient can access their own record
+        user = self.request.user
+        if user.type == 'P' and hasattr(user, 'patient'):
+            return user.patient
+        raise PermissionDenied("Only patients can set a primary hospital.")

@@ -208,3 +208,15 @@ class StaffSerializer(serializers.ModelSerializer):
 
 class GoogleAuthSerializer(serializers.Serializer):
     token = serializers.CharField(required=True)
+
+class PrimaryHospitalSerializer(serializers.ModelSerializer):
+    primary_hospital = serializers.PrimaryKeyRelatedField(
+        queryset=Hospital.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Patient
+        fields = ['id', 'user', 'primary_hospital']
+        read_only_fields = ['id', 'user']

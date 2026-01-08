@@ -1,9 +1,18 @@
-# user/admin.py
-
 from django.contrib import admin
-from  .models import  *
+from .models import User, Patient, Hospital, Staff
 
-admin.site.register(User)
-admin.site.register(Patient)
-admin.site.register(Hospital)
-admin.site.register(Staff)
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    search_fields = ('full_name', 'email', 'username')
+
+@admin.register(Patient)
+class PatientAdmin(admin.ModelAdmin):
+    search_fields = ('user__full_name', 'user__email')
+
+@admin.register(Hospital)
+class HospitalAdmin(admin.ModelAdmin):
+    search_fields = ('user__full_name', 'user__email', 'registration_number')
+
+@admin.register(Staff)
+class StaffAdmin(admin.ModelAdmin):
+    search_fields = ('user__full_name', 'user__email', 'designation')

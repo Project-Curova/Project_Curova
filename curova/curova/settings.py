@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'user',
+    'appointments',
     'django_extensions',
     'pydot',
     'graphviz',
