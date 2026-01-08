@@ -31,7 +31,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 # Patients: view their own appointments
 class PatientAppointmentListAPIView(generics.ListAPIView):
     serializer_class = AppointmentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    #permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -42,7 +42,7 @@ class PatientAppointmentListAPIView(generics.ListAPIView):
 # Hospitals: view appointments for their hospital
 class HospitalAppointmentListAPIView(generics.ListAPIView):
     serializer_class = AppointmentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    #permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -58,7 +58,7 @@ class HospitalAppointmentListAPIView(generics.ListAPIView):
 # Staff: view appointments assigned to them
 class StaffAppointmentListAPIView(generics.ListAPIView):
     serializer_class = AppointmentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    #permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -77,7 +77,7 @@ class StaffAppointmentListAPIView(generics.ListAPIView):
 # Patient: create appointment (auto‑uses primary hospital)
 class AppointmentCreateAPIView(generics.CreateAPIView):
     serializer_class = AppointmentCreateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    #permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save()
