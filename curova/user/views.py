@@ -15,6 +15,8 @@ from .serializers import UserSerializer
 from .serializers import *
 from django.conf import settings
 
+
+
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
 
@@ -250,26 +252,69 @@ class PendingUsersListAPIView(APIView):
         serializer = UserSerializer(pending_users, many=True)
         return Response(serializer.data)
 
-class HospitalListAPIView(generics.ListAPIView):
+
+# -------------------------------
+# Hospital ViewSet
+# -------------------------------
+class HospitalViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(type='H', is_authorized=True)
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class PatientListAPIView(generics.ListAPIView):
-    queryset = User.objects.filter(type='P')
-    serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def perform_update(self, serializer):
+        serializer.save()
 
-class StaffListAPIView(generics.ListAPIView):
+
+# -------------------------------
+# Patient ViewSet
+# -------------------------------
+class PatientViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        hospital_id = self.request.query_params.get('hospital_id')
-        qs = User.objects.filter(type='S')
-        if hospital_id:
-            qs = qs.filter(staff__hospital_id=hospital_id)
-        return qs
+        user = self.request.user
+        if user.type == 'P':
+            return User.objects.filter(id=user.id)
+        return User.objects.none()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+
+# -------------------------------
+# Staff ViewSet
+# -------------------------------
+class StaffViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Hospital sees its staff
+        if user.type == 'H':
+            return User.objects.filter(type='S', staff__hospital=user.hospital)
+
+        # Staff sees self
+        if user.type == 'S':
+            return User.objects.filter(id=user.id)
+
+        return User.objects.none()
+
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        if user.type != 'H':
+            raise PermissionDenied("Only hospitals can create staff")
+
+        serializer.save(
+            type='S',
+            staff={'hospital': user.hospital}
+        )
+
+    def perform_update(self, serializer):
+        serializer.save()
 
 class PrimaryHospitalAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = PrimaryHospitalSerializer
