@@ -1,8 +1,8 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from ..appointments.models import Appointment
+from appointments.models import Appointment
 from .services import create_notification
-from ..staff_settings.models import Holiday, Overtime
+from staff_settings.models import Holiday, Overtime
 
 @receiver(post_save, sender=Appointment)
 def appointment_created(sender, instance, created, **kwargs):
