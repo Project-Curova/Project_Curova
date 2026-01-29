@@ -20,7 +20,9 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('userapi/', include('user.urls')),  # <-- comma was missing here
-    path('appointments', include('appointments.urls')),
+    path('appointments/', include('appointments.urls')),
+    path('staff_settings/', include('staff_settings.urls')),
+    path('notifications/', include('notifications.urls')),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$',
             schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0),

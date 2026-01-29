@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'user',
     'appointments',
+    'staff_settings',
+    'notifications.apps.NotificationsConfig',
     'django_extensions',
     'pydot',
     'graphviz',
