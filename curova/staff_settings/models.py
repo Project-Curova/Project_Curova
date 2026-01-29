@@ -5,7 +5,7 @@ from django.db import models
 
 class Shift(models.Model):
     hospital = models.ForeignKey(
-        'users.Hospital',
+        'user.Hospital',
         on_delete=models.CASCADE,
         related_name='shifts'
     )
@@ -21,7 +21,7 @@ class Shift(models.Model):
 
 class StaffShift(models.Model):
     staff = models.ForeignKey(
-        'users.Staff',
+        'user.Staff',
         on_delete=models.CASCADE,
         related_name='assigned_shifts'
     )
@@ -38,7 +38,7 @@ class StaffShift(models.Model):
 
 class Break(models.Model):
     staff = models.ForeignKey(
-        'users.Staff',
+        'user.Staff',
         on_delete=models.CASCADE,
         related_name='breaks'
     )
@@ -51,7 +51,7 @@ class Break(models.Model):
 
 class Holiday(models.Model):
     staff = models.ForeignKey(
-        'users.Staff',
+        'user.Staff',
         on_delete=models.CASCADE,
         related_name='holidays'
     )
@@ -63,7 +63,7 @@ class Holiday(models.Model):
 
 class Overtime(models.Model):
     staff = models.ForeignKey(
-        'users.Staff',
+        'user.Staff',
         on_delete=models.CASCADE,
         related_name='overtimes'
     )
@@ -75,7 +75,7 @@ class Overtime(models.Model):
 
 class ShiftChangeRequest(models.Model):
     staff = models.ForeignKey(
-        'users.Staff',
+        'user.Staff',
         on_delete=models.CASCADE,
         related_name='shift_change_requests'
     )
