@@ -65,41 +65,34 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-class LoginSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(max_length=68, min_length=6, write_only=True)
-    username = serializers.CharField(max_length=255, min_length=1)
-    tokens = serializers.SerializerMethodField()
-    def get_tokens(self, obj):
-        user = User.objects.get(username=obj['username'])
-        return user.tokens
-    class Meta:
-        model= User
-        fields = ['password','username','tokens']
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=255)
+    password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        username = attrs.get('username', '')
-        password = attrs.get('password', '')
-        #if username exists
-        if not User.objects.filter(username=username).exists():
-            raise AuthenticationFailed('invalid username, try again')
+        username = attrs.get('username')
+        password = attrs.get('password')
 
-        user = auth.authenticate(username= username, password=password)
+        user = auth.authenticate(username=username, password=password)
 
-        #Check if password is correct
-        if user is None:
-            raise AuthenticationFailed('Invalid Password, try again')
+        if not user:
+            raise AuthenticationFailed('Invalid credentials')
 
         if not user.is_active:
-            raise AuthenticationFailed('Account disabled, contact admin')
+            raise AuthenticationFailed('Account disabled')
 
         if not user.is_authorized:
             raise AuthenticationFailed('Admin needs to approve your account')
 
         return {
-            'email':user.email,
-            'username':user.username,
-            'tokens':user.tokens()
+            'user': user
         }
+class LoginResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    detail = serializers.CharField()
+    user_type = serializers.CharField()
+
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()

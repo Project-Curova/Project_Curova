@@ -41,29 +41,34 @@ class RegisterView(generics.GenericAPIView):
 class LoginAPIView(generics.GenericAPIView):
     serializer_class = LoginSerializer
 
-    def post(self,request):
-        serializer = self.serializer_class(data=request.data)
+    @swagger_auto_schema(
+        responses={200: LoginResponseSerializer}
+    )
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(username=serializer.validated_data['username'])
 
-        if user.is_authorized:
-            response_data = serializer.validated_data
-            response_data["detail"] = "Logged in Successfully"
-            response_data["user_type"] = user.type
+        user = serializer.validated_data['user']
+        refresh = RefreshToken.for_user(user)
 
+        user.refresh_token = str(refresh)
+        user.save(update_fields=["refresh_token"])
 
-            #Generate a refresh token and set it for user
-            refresh= RefreshToken.for_user(user)
-            user.refresh_token = str(refresh)
-            user.save()
+        response = Response({
+            "access": str(refresh.access_token),
+            "user_type": user.type,
+            "detail": "Logged in Successfully",
+        }, status=status.HTTP_200_OK)
 
-            response = Response(response_data, status = status.HTTP_200_OK)
-            #response set cokkie
-            response.set_cookie('refreshToken', user.refresh_token, secure=True, samesite= 'None')
+        response.set_cookie(
+            key="refreshToken",
+            value=str(refresh),
+            httponly=True,
+            secure=True,
+            samesite="None"
+        )
 
-            return response
-        else:
-            return  Response({"detail":"Your account needs to be approved by an admin"})
+        return response
 
 
 class LogoutAPIView(generics.GenericAPIView):
@@ -157,6 +162,9 @@ class StaffAPIView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Hospitals only see their staff"""
+        if getattr(self, 'swagger_fake_view', False):
+            return Staff.objects.none()
+
         user = self.request.user
         if user.type == "H":
             hospital = Hospital.objects.filter(user=user).first()
