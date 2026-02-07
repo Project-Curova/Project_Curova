@@ -49,6 +49,8 @@ class LoginAPIView(generics.GenericAPIView):
         if user.is_authorized:
             response_data = serializer.validated_data
             response_data["detail"] = "Logged in Successfully"
+            response_data["user_type"] = user.type
+
 
             #Generate a refresh token and set it for user
             refresh= RefreshToken.for_user(user)
