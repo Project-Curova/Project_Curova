@@ -42,13 +42,19 @@ class LoginAPIView(generics.GenericAPIView):
     serializer_class = LoginSerializer
 
     @swagger_auto_schema(
-        responses={200: LoginResponseSerializer}
-    )
+        request_body=LoginSerializer,
+        responses={200: LoginResponseSerializer})
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data['user']
+        user = serializer.validated_data.get('user')
+        if not user:
+            return Response(
+                {"detail": "Authentication failed"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         refresh = RefreshToken.for_user(user)
 
         user.refresh_token = str(refresh)
@@ -61,8 +67,8 @@ class LoginAPIView(generics.GenericAPIView):
         }, status=status.HTTP_200_OK)
 
         response.set_cookie(
-            key="refreshToken",
-            value=str(refresh),
+            "refreshToken",
+            str(refresh),
             httponly=True,
             secure=True,
             samesite="None"
