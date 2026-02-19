@@ -44,7 +44,8 @@ class LoginAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(
         request_body=LoginSerializer,
-        responses={200: LoginResponseSerializer})
+        responses={200: LoginResponseSerializer}
+    )
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -58,11 +59,9 @@ class LoginAPIView(generics.GenericAPIView):
 
         refresh = RefreshToken.for_user(user)
 
-        user.refresh_token = str(refresh)
-        user.save(update_fields=["refresh_token"])
-
         response = Response({
             "access": str(refresh.access_token),
+            "refresh": str(refresh),
             "user_type": user.type,
             "detail": "Logged in Successfully",
         }, status=status.HTTP_200_OK)
@@ -71,7 +70,7 @@ class LoginAPIView(generics.GenericAPIView):
             "refreshToken",
             str(refresh),
             httponly=True,
-            secure=not settings.DEBUG,
+            secure=True,
             samesite="None"
         )
 
