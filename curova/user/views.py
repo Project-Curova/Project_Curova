@@ -14,6 +14,7 @@ from .models import Patient, Hospital,User
 from .serializers import UserSerializer
 from .serializers import *
 from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 
