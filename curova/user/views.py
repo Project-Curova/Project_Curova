@@ -71,7 +71,7 @@ class LoginAPIView(generics.GenericAPIView):
             "refreshToken",
             str(refresh),
             httponly=True,
-            secure=True,
+            secure=not settings.DEBUG,
             samesite="None"
         )
 
