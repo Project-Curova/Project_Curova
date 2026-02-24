@@ -23,6 +23,8 @@ urlpatterns = [
     path('appointments/', include('appointments.urls')),
     path('staff_settings/', include('staff_settings.urls')),
     path('notifications/', include('notifications.urls')),
+    path('ai_services/', include('ai_services.urls')),
+
     re_path(r'^swagger(?P<format>\.json|\.yaml)$',
             schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0),

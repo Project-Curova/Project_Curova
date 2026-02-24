@@ -20,7 +20,7 @@ class User(AbstractUser):
     country = models.CharField(max_length=50)
     state = models.CharField(max_length=50)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, blank=False, null=False)
-
+    profile_completed_override = models.BooleanField(null=True, blank=True)
     def __str__(self) -> str:
         return self.username
 

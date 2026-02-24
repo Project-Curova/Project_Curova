@@ -11,7 +11,7 @@ from .views import (
     GoogleLoginAPIView,
     ApproveUserAPIView,
     PendingUsersListAPIView,
-    PrimaryHospitalAPIView,
+    PrimaryHospitalAPIView, ToggleProfileCompletionAPIView,
 )
 
 router = DefaultRouter()
@@ -35,6 +35,7 @@ urlpatterns = [
 
     # Patient Primary Hospital
     path('primary-hospital/', PrimaryHospitalAPIView.as_view(), name='primary-hospital'),
+path("profile-completion/toggle/", ToggleProfileCompletionAPIView.as_view(), name="profile-completion-toggle"),
 ]
 
 urlpatterns += router.urls

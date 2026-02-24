@@ -39,8 +39,26 @@ class RegisterView(generics.GenericAPIView):
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
+# views.py
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
+
+from .serializers import (
+    LoginSerializer,
+    LoginResponseSerializer,
+    ProfileCompletionToggleSerializer,
+)
+
+# views.py
+
 class LoginAPIView(generics.GenericAPIView):
     serializer_class = LoginSerializer
+    #permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         request_body=LoginSerializer,
@@ -50,28 +68,42 @@ class LoginAPIView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data.get('user')
-        if not user:
-            return Response(
-                {"detail": "Authentication failed"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+        user = serializer.validated_data["user"]
         refresh = RefreshToken.for_user(user)
 
-        response = Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "user_type": user.type,
-            "detail": "Logged in Successfully",
-        }, status=status.HTTP_200_OK)
+        # Compute real profile completion
+        if user.type == "P":
+            profile_completed = hasattr(user, "patient")
+        elif user.type == "H":
+            profile_completed = hasattr(user, "hospital")
+        elif user.type == "S":
+            profile_completed = hasattr(user, "staff")
+        else:
+            profile_completed = False
+
+        # ✅ Apply persistent override if set
+        if user.profile_completed_override is not None:
+            profile_completed = user.profile_completed_override
+
+        response = Response(
+            {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "username": user.username,
+                "email": user.email,
+                "user_type": user.type,
+                "profile_completed": profile_completed,
+                "detail": "Logged in Successfully",
+            },
+            status=status.HTTP_200_OK,
+        )
 
         response.set_cookie(
             "refreshToken",
             str(refresh),
             httponly=True,
             secure=True,
-            samesite="None"
+            samesite="None",
         )
 
         return response
@@ -342,3 +374,25 @@ class PrimaryHospitalAPIView(generics.RetrieveUpdateAPIView):
         if user.type == 'P' and hasattr(user, 'patient'):
             return user.patient
         raise PermissionDenied("Only patients can set a primary hospital.")
+
+class ToggleProfileCompletionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=ProfileCompletionToggleSerializer,
+        responses={200: "Profile completion override updated"}
+    )
+    def post(self, request):
+        serializer = ProfileCompletionToggleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        request.user.profile_completed_override = serializer.validated_data["profile_completed"]
+        request.user.save(update_fields=["profile_completed_override"])
+
+        return Response(
+            {
+                "detail": "Profile completion override updated",
+                "profile_completed": request.user.profile_completed_override,
+            },
+            status=status.HTTP_200_OK,
+        )

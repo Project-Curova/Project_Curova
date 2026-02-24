@@ -90,9 +90,11 @@ class LoginSerializer(serializers.Serializer):
 class LoginResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
-    detail = serializers.CharField()
+    username = serializers.CharField()
+    email = serializers.EmailField()
     user_type = serializers.CharField()
-
+    profile_completed = serializers.BooleanField()
+    detail = serializers.CharField()
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
@@ -213,3 +215,6 @@ class PrimaryHospitalSerializer(serializers.ModelSerializer):
         model = Patient
         fields = ['id', 'user', 'primary_hospital']
         read_only_fields = ['id', 'user']
+
+class ProfileCompletionToggleSerializer(serializers.Serializer):
+    profile_completed = serializers.BooleanField()
