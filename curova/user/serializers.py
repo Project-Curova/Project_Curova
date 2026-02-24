@@ -15,7 +15,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'full_name', 'email', 'dob', 'state', 'country', 'type', 'password')
+        fields = ('username', 'full_name', 'email', 'dob', 'state', 'country', 'type', 'password','profile_completed_override')
 
     def validate(self, attrs):
         username = attrs.get('username', '')
@@ -29,23 +29,19 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get('request', None)
 
-        # Base flags (never set by public users)
         is_staff_flag = False
         is_superuser_flag = False
 
-        # If an authenticated admin is creating users via this endpoint, allow flags
         if request and request.user.is_authenticated and request.user.is_staff:
-            # Optional elevated flags via admin-only request data
             is_staff_flag = bool(self.initial_data.get('is_staff', False))
             is_superuser_flag = bool(self.initial_data.get('is_superuser', False))
 
-        # Authorization logic based on type
         user_type = validated_data['type']
         if user_type == 'P':
-            is_authorized = True  # patients auto-authorized
+            is_authorized = True
         elif user_type == 'H':
-            is_authorized = False  # hospitals require admin approval
-        else:  # 'S' staff (usually created by hospitals or admins)
+            is_authorized = False
+        else:
             is_authorized = False
 
         user = User.objects.create_user(
@@ -59,11 +55,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             is_staff=is_staff_flag,
             is_superuser=is_superuser_flag,
+            profile_completed_override=validated_data.get("profile_completed_override")
         )
-        # Enforce authorization rule after creation
+
         user.is_authorized = is_authorized
         user.save()
         return user
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255)
@@ -130,7 +128,7 @@ class PasswordResetSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "full_name", "dob", "type", "country", "state"]
+        fields = ["id", "username", "email", "full_name", "dob", "type", "country", "state","profile_completed_override"]
         read_only_fields = ["id", "type", "email", "username"]
 
 
