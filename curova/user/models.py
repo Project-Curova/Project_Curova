@@ -1,7 +1,6 @@
-# user/models.py
-
 from django.db import models
-from django.contrib.auth.models import User, AbstractUser
+from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -9,31 +8,42 @@ class User(AbstractUser):
 
     TYPE_CHOICES = [
         ('H', 'Hospital'),
-        ('P','Patient'),
+        ('P', 'Patient'),
         ('S', 'Staff')
     ]
-    username = models.CharField(max_length=100, unique= True, null=True, blank=True)
+
+    username = models.CharField(max_length=100, unique=True, null=True, blank=True)
     email = models.EmailField(max_length=100, unique=True, db_index=True)
     full_name = models.CharField(max_length=200, null=True, blank=True)
     dob = models.DateField(null=True, blank=True)
     is_authorized = models.BooleanField(default=False)
-    country = models.CharField(max_length=50, null=True, blank=True )
+    country = models.CharField(max_length=50, null=True, blank=True)
     state = models.CharField(max_length=50, null=True, blank=True)
-    type = models.CharField(max_length=10, choices=TYPE_CHOICES, blank=False, null=False)
-    profile_completed_override = models.BooleanField(null=True, blank=True)
-    def __str__(self) -> str:
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+
+    # ❌ Removed the broken field
+    # profile_completed_override = models.BooleanField(null=True, blank=True)
+
+    def __str__(self):
         return self.username
 
     def tokens(self):
         refresh = RefreshToken.for_user(self)
         return {
-            'refresh':str(refresh),
+            'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
 
 
+# NEW SAFE MODEL
+class UserProfileOverride(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    profile_completed_override = models.BooleanField(default=False)
 
-# Patient Profile
+    def __str__(self):
+        return f"{self.user.username} override"
+
+
 class Patient(models.Model):
     GENDER_CHOICES = [('M', 'Male'), ('F', 'Female'), ('O', 'Other')]
 
@@ -58,7 +68,7 @@ class Patient(models.Model):
     def __str__(self):
         return self.user.username
 
-# Hospital Profile
+
 class Hospital(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     hospital_name = models.CharField(max_length=100)
@@ -68,7 +78,7 @@ class Hospital(models.Model):
     def __str__(self):
         return self.hospital_name
 
-# Staff Profile
+
 class Staff(models.Model):
     GENDER_CHOICES = [('M', 'Male'), ('F', 'Female'), ('O', 'Other')]
 

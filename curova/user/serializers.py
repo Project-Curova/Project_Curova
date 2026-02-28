@@ -7,42 +7,39 @@ from django.contrib import auth
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 
+from django.utils.crypto import get_random_string
+from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
+from django.contrib.auth import get_user_model
+from django.contrib import auth
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
+from .models import User, Patient, Hospital, Staff, UserProfileOverride
+
 User = get_user_model()
 
+
 class RegisterSerializer(serializers.ModelSerializer):
-    # Remove is_superuser and is_staff from public input
     password = serializers.CharField(max_length=100, write_only=True)
+    profile_completed_override = serializers.BooleanField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = ('username', 'full_name', 'email', 'dob', 'state', 'country', 'type', 'password','profile_completed_override')
+        fields = (
+            'username', 'full_name', 'email', 'dob', 'state', 'country',
+            'type', 'password', 'profile_completed_override'
+        )
 
     def validate(self, attrs):
         username = attrs.get('username', '')
         if not username or not username.isalnum():
-            raise serializers.ValidationError("Username must be alphanumeric and not empty.")
-        # Ensure type is one of the allowed choices
+            raise serializers.ValidationError("Username must be alphanumeric.")
         if attrs.get('type') not in ['H', 'P', 'S']:
-            raise serializers.ValidationError("Invalid user type. Must be one of: H, P, S.")
+            raise serializers.ValidationError("Invalid user type.")
         return attrs
 
     def create(self, validated_data):
-        request = self.context.get('request', None)
-
-        is_staff_flag = False
-        is_superuser_flag = False
-
-        if request and request.user.is_authenticated and request.user.is_staff:
-            is_staff_flag = bool(self.initial_data.get('is_staff', False))
-            is_superuser_flag = bool(self.initial_data.get('is_superuser', False))
-
-        user_type = validated_data['type']
-        if user_type == 'P':
-            is_authorized = True
-        elif user_type == 'H':
-            is_authorized = False
-        else:
-            is_authorized = False
+        override_value = validated_data.pop("profile_completed_override", None)
 
         user = User.objects.create_user(
             username=validated_data['username'],
@@ -51,15 +48,19 @@ class RegisterSerializer(serializers.ModelSerializer):
             dob=validated_data.get('dob'),
             state=validated_data.get('state'),
             country=validated_data.get('country'),
-            type=user_type,
+            type=validated_data['type'],
             password=validated_data['password'],
-            is_staff=is_staff_flag,
-            is_superuser=is_superuser_flag,
-            profile_completed_override=validated_data.get("profile_completed_override")
         )
 
-        user.is_authorized = is_authorized
-        user.save(update_fields=['is_authorized', 'profile_completed_override'])
+        user.is_authorized = (user.type == "P")
+        user.save()
+
+        if override_value is not None:
+            UserProfileOverride.objects.update_or_create(
+                user=user,
+                defaults={"profile_completed_override": override_value}
+            )
+
         return user
 
 
@@ -68,23 +69,36 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        username = attrs.get('username')
-        password = attrs.get('password')
-
-        user = auth.authenticate(username=username, password=password)
-
+        user = auth.authenticate(
+            username=attrs.get('username'),
+            password=attrs.get('password')
+        )
         if not user:
             raise AuthenticationFailed('Invalid credentials')
-
         if not user.is_active:
             raise AuthenticationFailed('Account disabled')
-
         if not user.is_authorized:
-            raise AuthenticationFailed('Admin needs to approve your account')
+            raise AuthenticationFailed('Admin must approve your account')
+        return {'user': user}
 
-        return {
-            'user': user
-        }
+
+class UserSerializer(serializers.ModelSerializer):
+    profile_completed_override = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id", "username", "email", "full_name", "dob",
+            "type", "country", "state", "profile_completed_override"
+        ]
+        read_only_fields = ["id", "type", "email", "username"]
+
+    def get_profile_completed_override(self, obj):
+        try:
+            return obj.userprofileoverride.profile_completed_override
+        except UserProfileOverride.DoesNotExist:
+            return False
+
 class LoginResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
@@ -124,13 +138,6 @@ class PasswordResetSerializer(serializers.Serializer):
         user.login_token = otp
         user.save()
         return {'user':user , 'otp': otp}
-    
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["id", "username", "email", "full_name", "dob", "type", "country", "state","profile_completed_override"]
-        read_only_fields = ["id", "type", "email", "username"]
-
 
 class PatientSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

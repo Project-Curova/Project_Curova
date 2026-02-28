@@ -3,67 +3,46 @@ from django.core.mail import send_mail
 from drf_yasg.utils import swagger_auto_schema
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from rest_framework import generics, status, mixins, permissions, viewsets
-from rest_framework.decorators import permission_classes,api_view
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from .models import Patient, Hospital,User
-from .serializers import UserSerializer
 from .serializers import *
 from django.conf import settings
+from rest_framework import generics, status, viewsets, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .models import User, Patient, Hospital, Staff, UserProfileOverride
+from .serializers import (
+    RegisterSerializer, LoginSerializer, LoginResponseSerializer,
+    PatientSerializer, HospitalSerializer, StaffSerializer,
+    ProfileCompletionToggleSerializer, UserSerializer
+)
 
 
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
 
-    def post(self, request, *args, **kwargs):
-        # Pass request into serializer context so it can check if caller is admin
+    def post(self, request):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Build safe response payload
-        response_data = {
+        return Response({
             "id": user.id,
             "username": user.username,
             "email": user.email,
             "full_name": user.full_name,
             "type": user.type,
             "is_authorized": user.is_authorized,
-        }
+        }, status=201)
 
-        return Response(response_data, status=status.HTTP_201_CREATED)
-
-# views.py
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.conf import settings
-
-from .serializers import (
-    LoginSerializer,
-    LoginResponseSerializer,
-    ProfileCompletionToggleSerializer,
-)
-
-# views.py
 
 class LoginAPIView(generics.GenericAPIView):
     serializer_class = LoginSerializer
-    #permission_classes = [AllowAny]
 
-    @swagger_auto_schema(
-        request_body=LoginSerializer,
-        responses={200: LoginResponseSerializer}
-    )
+    @swagger_auto_schema(request_body=LoginSerializer, responses={200: LoginResponseSerializer})
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -71,7 +50,6 @@ class LoginAPIView(generics.GenericAPIView):
         user = serializer.validated_data["user"]
         refresh = RefreshToken.for_user(user)
 
-        # Compute real profile completion
         if user.type == "P":
             profile_completed = hasattr(user, "patient")
         elif user.type == "H":
@@ -81,32 +59,21 @@ class LoginAPIView(generics.GenericAPIView):
         else:
             profile_completed = False
 
-        # ✅ Apply persistent override if set
-        if user.profile_completed_override is not None:
-            profile_completed = user.profile_completed_override
+        try:
+            override = user.userprofileoverride.profile_completed_override
+            profile_completed = override
+        except UserProfileOverride.DoesNotExist:
+            pass
 
-        response = Response(
-            {
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-                "username": user.username,
-                "email": user.email,
-                "user_type": user.type,
-                "profile_completed": profile_completed,
-                "detail": "Logged in Successfully",
-            },
-            status=status.HTTP_200_OK,
-        )
-
-        response.set_cookie(
-            "refreshToken",
-            str(refresh),
-            httponly=True,
-            secure=True,
-            samesite="None",
-        )
-
-        return response
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "username": user.username,
+            "email": user.email,
+            "user_type": user.type,
+            "profile_completed": profile_completed,
+            "detail": "Logged in Successfully",
+        })
 
 
 class LogoutAPIView(generics.GenericAPIView):
@@ -386,13 +353,14 @@ class ToggleProfileCompletionAPIView(APIView):
         serializer = ProfileCompletionToggleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        request.user.profile_completed_override = serializer.validated_data["profile_completed"]
-        request.user.save(update_fields=["profile_completed_override"])
+        value = serializer.validated_data["profile_completed"]
 
-        return Response(
-            {
-                "detail": "Profile completion override updated",
-                "profile_completed": request.user.profile_completed_override,
-            },
-            status=status.HTTP_200_OK,
+        UserProfileOverride.objects.update_or_create(
+            user=request.user,
+            defaults={"profile_completed_override": value}
         )
+
+        return Response({
+            "detail": "Profile completion override updated",
+            "profile_completed": value,
+        })
