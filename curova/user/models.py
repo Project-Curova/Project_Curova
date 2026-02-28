@@ -17,8 +17,8 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=200, null=True, blank=True)
     dob = models.DateField(null=True, blank=True)
     is_authorized = models.BooleanField(default=False)
-    country = models.CharField(max_length=50)
-    state = models.CharField(max_length=50)
+    country = models.CharField(max_length=50, null=True, blank=True )
+    state = models.CharField(max_length=50, null=True, blank=True)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, blank=False, null=False)
     profile_completed_override = models.BooleanField(null=True, blank=True)
     def __str__(self) -> str:

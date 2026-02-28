@@ -59,7 +59,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
 
         user.is_authorized = is_authorized
-        user.save()
+        user.save(update_fields=['is_authorized', 'profile_completed_override'])
         return user
 
 
