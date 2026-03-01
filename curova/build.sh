@@ -9,7 +9,7 @@ echo "🔹 Running collectstatic..."
 python manage.py collectstatic --no-input
 
 echo "🔹 Running database migrations..."
-python manage.py migrate
+python manage.py migrate --fake-initial
 
 echo "🔹 Checking for Swagger compatibility..."
 # No extra install needed for swagger in prod, but ensures cache is cleared
