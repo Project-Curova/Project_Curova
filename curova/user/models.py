@@ -17,9 +17,9 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=200, null=True, blank=True)
     dob = models.DateField(null=True, blank=True)
     is_authorized = models.BooleanField(default=False)
-    country = models.CharField(max_length=50, null=True, blank=True)
-    state = models.CharField(max_length=50, null=True, blank=True)
-    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    country = models.CharField(max_length=50, null=True, blank=True, default="Unknown" )
+    state = models.CharField(max_length=50, null=True, blank=True, default="Unknown")
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="P")
 
     # ❌ Removed the broken field
     # profile_completed_override = models.BooleanField(null=True, blank=True)
