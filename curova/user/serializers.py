@@ -147,7 +147,7 @@ class PatientSerializer(serializers.ModelSerializer):
         fields = [
            "id", "user", "date_of_birth", "gender", "address",
             "state", "country", "patient_id", "blood_group",
-            "genotype", "insurance_provider_name"
+            "genotype", "insurance_provider_name","primary_hospital"
         ]
         read_only_fields = ["id", "patient_id"]
 
